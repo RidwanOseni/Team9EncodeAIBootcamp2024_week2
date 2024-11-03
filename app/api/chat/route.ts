@@ -25,8 +25,8 @@ export async function POST(req: Request) {
   if (!topic || !tone || !type) {
     return new Response("Missing required joke parameters", { status: 400 });
   }
-
-  const response = await openai.chat.completions.create({
+  // Generate the joke
+  const jokeResponse = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     stream: true,
     temperature,
@@ -42,6 +42,25 @@ export async function POST(req: Request) {
     ],
   });
 
-  const stream = OpenAIStream(response);
-  return new StreamingTextResponse(stream);
+  const jokeStream = OpenAIStream(jokeResponse);
+  const joke = await jokeStream; // Capture generated joke text
+
+  // Evaluate the joke's content
+  const evaluationResponse = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are a content evaluator. Your task is to evaluate if a joke is "funny", "appropriate", "offensive", or "neutral". Provide a one-word answer with the evaluation criteria and a short explanation.`,
+      },
+      {
+        role: "user",
+        content: `Evaluate the following joke: "${joke}"`,
+      },
+    ],
+  });
+
+  const evaluationStream = OpenAIStream(evaluationResponse);
+  const evaluation = await evaluationStream;
+  return new StreamingTextResponse(`${joke}\n\nEvaluation: ${evaluation}`);
 }
