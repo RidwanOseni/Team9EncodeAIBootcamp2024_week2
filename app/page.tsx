@@ -165,7 +165,7 @@ export default function JokeGenerator() {
             Generate Joke
           </button>
 
-          {/* Display the joke */}
+          {/* Display the joke and its evaluation */}
           <div
             hidden={
               messages.length === 0 ||
@@ -173,7 +173,10 @@ export default function JokeGenerator() {
             }
             className="bg-opacity-25 bg-gray-700 rounded-lg p-4 text-black"
           >
-            {messages[messages.length - 1]?.content}
+            <p>{messages[messages.length - 1]?.content.split('\n\n')[0]}</p>
+            <p className="text-zinc-500 dark:text-zinc-400">
+              {messages[messages.length - 1]?.content.split('\n\n')[1]}
+            </p>
           </div>
         </div>
       </div>
