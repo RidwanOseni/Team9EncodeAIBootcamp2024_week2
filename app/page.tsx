@@ -166,17 +166,13 @@ export default function JokeGenerator() {
           </button>
 
           {/* Display the joke and its evaluation */}
-          <div
-            hidden={
-              messages.length === 0 ||
-              messages[messages.length - 1]?.content.startsWith("Generate")
-            }
-            className="bg-opacity-25 bg-gray-700 rounded-lg p-4 text-black"
-          >
-            <p>{messages[messages.length - 1]?.content.split('\n\n')[0]}</p>
-            <p className="text-zinc-500 dark:text-zinc-400">
-              {messages[messages.length - 1]?.content.split('\n\n')[1]}
-            </p>
+          <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+            {messages.map((m) => (
+              <div key={m.id} className="whitespace-pre-wrap">
+                {m.role === "user" ? "User: " : "AI: "}
+                {m.content}
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
-
-const openai = new OpenAI();
+import {openai} from "@ai-sdk/openai";
+import { convertToCoreMessages, streamText } from "ai";
 
 export const runtime = "edge";
 
@@ -26,11 +24,11 @@ export async function POST(req: Request) {
     return new Response("Missing required joke parameters", { status: 400 });
   }
   // Generate the joke
-  const jokeResponse = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    stream: true,
+  const jokeResponse = await streamText({
+    model: openai("gpt-4o-mini"),
+    // stream: true,
     temperature,
-    messages: [
+    messages: convertToCoreMessages([
       {
         role: "system",
         content: `You are a witty comedian who crafts jokes with a specific topic, tone, and style. Your jokes should be funny, engaging, and tailored to the parameters provided by the user.`,
@@ -39,28 +37,25 @@ export async function POST(req: Request) {
         role: "user",
         content: `Create a ${type} joke on the topic of ${topic} in a ${tone} tone.`,
       },
-    ],
+    ]),
   });
 
-  const jokeStream = OpenAIStream(jokeResponse);
-  const joke = await jokeStream; // Capture generated joke text
+  const jokeStream = jokeResponse.toDataStreamResponse();
 
+  return jokeStream
   // Evaluate the joke's content
-  const evaluationResponse = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `You are a content evaluator. Your task is to evaluate if a joke is "funny", "appropriate", "offensive", or "neutral". Provide a one-word answer with the evaluation criteria and a short explanation.`,
-      },
-      {
-        role: "user",
-        content: `Evaluate the following joke: "${joke}"`,
-      },
-    ],
-  });
+  // const evaluationResponse = await streamText({
+  //   model: openai("gpt-4o-mini"),
+  //   messages: convertToCoreMessages([
+  //     {
+  //       role: "system",
+  //       content: `You are a content evaluator. Your task is to evaluate if a joke is "funny", "appropriate", "offensive", or "neutral". Provide a one-word answer with the evaluation criteria and a short explanation.`,
+  //     },
+  //     {
+  //       role: "user",
+  //       content: `Evaluate the following joke: "${jokeText}"`,
+  //     },
+  //   ]),
+  // });
 
-  const evaluationStream = OpenAIStream(evaluationResponse);
-  const evaluation = await evaluationStream;
-  return new StreamingTextResponse(`${joke}\n\nEvaluation: ${evaluation}`);
 }
