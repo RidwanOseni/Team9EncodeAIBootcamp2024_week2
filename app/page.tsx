@@ -424,17 +424,12 @@ Remember: Return ONLY the JSON object, nothing else.`;
           {/* Display the joke */}
           <div
             hidden={
-                messages.length === 0 ||
-                messages[messages.length - 1]?.content.startsWith("Generate") ||
-                isEvaluationPrompt(messages[messages.length - 1]?.content)
+              messages.length === 0 ||
+              messages[messages.length - 1]?.content.startsWith("Generate")
             }
             className="bg-opacity-25 bg-gray-700 rounded-lg p-4 text-black"
           >
-            {messages.length > 0 && 
-                !isEvaluationPrompt(messages[messages.length - 1]?.content) ? 
-                messages[messages.length - 1]?.content :
-                messages[messages.length - 2]?.content
-            }
+            {messages[messages.length - 1]?.content}
           </div>
 
           {/* Display the evaluation */}

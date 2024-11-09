@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
-
-const openai = new OpenAI();
+import {openai} from "@ai-sdk/openai";
+import { convertToCoreMessages, streamText } from "ai";
 
 export const runtime = "edge";
 
@@ -29,14 +27,30 @@ const SYSTEM_PROMPTS = {
 };
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const lastMessage = messages[messages.length - 1];
-  const isEvaluationRequest = lastMessage.content.includes('Evaluate this joke');
+  let parameters;
+
+  try {
+    // Attempt to parse request JSON
+    parameters = await req.json();
+  } catch (error) {
+    return new Response("Invalid JSON format", { status: 400 });
+  }
+
+  const {
+    topic = "general",
+    tone = "funny",
+    type = "pun",
+    temperature = 0.7,
+  } = parameters || {};
+
+  if (!topic || !tone || !type) {
+    return new Response("Missing required joke parameters", { status: 400 });
+  }
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o-mini",
     stream: true,
-    temperature: isEvaluationRequest ? 0.3 : 0.7,
+    temperature,
     messages: [
       {
         role: "system",
@@ -44,10 +58,29 @@ export async function POST(req: Request) {
           ? "You are a joke evaluator. You MUST respond with ONLY a JSON object containing humor, appropriateness, relevance, creativity ratings, and a brief summary. Do not include any other text or the original joke in your response."
           : "You are a witty comedian who creates jokes based on the given parameters."
       },
-      ...messages
+      {
+        role: "user",
+        content: `Create a ${type} joke on the topic of ${topic} in a ${tone} tone.`,
+      },
     ],
   });
 
-  const stream = OpenAIStream(response);
-  return new StreamingTextResponse(stream);
+  const jokeStream = jokeResponse.toDataStreamResponse();
+
+  return jokeStream
+  // Evaluate the joke's content
+  // const evaluationResponse = await streamText({
+  //   model: openai("gpt-4o-mini"),
+  //   messages: convertToCoreMessages([
+  //     {
+  //       role: "system",
+  //       content: `You are a content evaluator. Your task is to evaluate if a joke is "funny", "appropriate", "offensive", or "neutral". Provide a one-word answer with the evaluation criteria and a short explanation.`,
+  //     },
+  //     {
+  //       role: "user",
+  //       content: `Evaluate the following joke: "${jokeText}"`,
+  //     },
+  //   ]),
+  // });
+
 }
